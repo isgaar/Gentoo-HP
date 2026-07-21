@@ -1,6 +1,6 @@
 # Gentoo-HP
 
-Perfil de instalacion de Gentoo para una **HP Pavilion Laptop 15-eh0xxx** como la de Ismael.
+Perfil de instalacion de Gentoo para una **HP Pavilion Laptop 15-eh0xxx** con Ryzen 5 4500U.
 
 Este proyecto esta basado explicitamente en el repositorio original
 [oddlama/gentoo-install](https://github.com/oddlama/gentoo-install).
@@ -21,9 +21,10 @@ Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 - foot, waybar, wofi, mako, swaylock, swayidle y wl-clipboard
 - Teclado `latam` y touchpad con tap/natural scroll en Sway
 - TLP con soporte `ppd`, habilitando `tlp.service` y `tlp-pd.service`
+- Fuentes Noto, Noto CJK y Noto Color Emoji para emojis y caracteres asiaticos
 - Instalacion automatica al unico NVMe detectado
 - Arranque UEFI obligatorio, sin modo BIOS
-- Usuario `ismael` con `sudo` y contrasena propia
+- Usuario normal preguntado durante la instalacion, con `sudo` opcional
 
 ## Advertencia Importante
 
@@ -49,28 +50,28 @@ I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=true
 
 Aunque este desbloqueado, el instalador todavia muestra el layout antes de particionar. Confirma solo si el NVMe mostrado es el correcto.
 
-## Usuario Administrador
+## Usuario
 
-El instalador crea el usuario:
+Por seguridad, `gentoo.conf` no guarda ningun nombre de usuario ni contrasena.
 
-```bash
-ismael
+Durante la instalacion el script pregunta:
+
+```text
+Nombre del usuario normal que quieres crear:
+Quieres que '<usuario>' sea administrador con sudo (grupo wheel)?
+Define la contrasena para el usuario '<usuario>'
 ```
 
-Ese usuario queda agregado a `wheel` y puede usar `sudo`. No queda como root directo y no tiene sudo sin contrasena. Cuando uses comandos administrativos, Gentoo pedira la contrasena de `ismael`:
+Si respondes que si al acceso de administrador, el usuario queda en `wheel` y puede usar `sudo`. No se crea como UID 0, no queda como `root` directo y no tiene sudo sin contrasena. Cuando uses comandos administrativos, Gentoo pedira la contrasena del usuario:
 
 ```bash
 sudo emerge --sync
 sudo emerge --ask app-editors/neovim
 ```
 
-La contrasena no se guarda en `gentoo.conf`. El instalador la pide de forma interactiva al final con:
+Si respondes que no, el usuario queda normal, sin `sudo`. En ese caso conviene responder que si cuando el instalador pregunte por la contrasena de `root`, porque necesitaras root para administrar el sistema.
 
-```bash
-passwd ismael
-```
-
-Este es el modo recomendable: usuario normal para el dia a dia, `sudo` con contrasena para tareas de administrador, y root solo cuando haga falta.
+El modo recomendable para una laptop personal es usuario normal para el dia a dia, `sudo` con contrasena para tareas de administrador, y root solo cuando haga falta.
 
 ## Ya Tengo El USB LiveGUI, Ahora Que Hago
 
@@ -202,9 +203,10 @@ Cuando confirmes, hara en resumen:
 9. Instalar firmware, NetworkManager, iwd, SDDM, KDE Plasma, Sway, TLP y `tlp-pd`.
 10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo.
-12. Crear el usuario `ismael`, configurar `sudo` y pedir su contrasena.
+12. Preguntar el usuario normal, pedir su contrasena y preguntar si tendra `sudo`.
 13. Configurar aceleracion de video para Radeon Vega: Mesa/RadeonSI/RADV, VA-API, VDPAU, Vulkan, FFmpeg, GStreamer y mpv.
-14. Crear configuracion basica de Sway para `ismael` y habilitar `sddm`.
+14. Configurar fuentes Unicode para emojis y caracteres CJK.
+15. Crear configuracion basica de Sway para ese usuario y habilitar `sddm`.
 
 ## Primer Arranque
 
@@ -218,7 +220,7 @@ Retira el USB o elige el disco interno desde el menu UEFI.
 
 Al arrancar Gentoo te pedira la contrasena LUKS. Despues aparecera SDDM.
 
-Inicia sesion como `ismael` usando la contrasena que definiste durante la instalacion. En el selector de sesion de SDDM podras elegir KDE Plasma o Sway. Si quieres el escritorio completo, elige Plasma. Si quieres un entorno ligero tipo tiling, elige Sway.
+Inicia sesion con el usuario y la contrasena que definiste durante la instalacion. En el selector de sesion de SDDM podras elegir KDE Plasma o Sway. Si quieres el escritorio completo, elige Plasma. Si quieres un entorno ligero tipo tiling, elige Sway.
 
 Atajos iniciales en Sway:
 
@@ -284,6 +286,18 @@ glxinfo -B
 mpv --hwdec=auto archivo.mp4
 ```
 
+## Fuentes Unicode
+
+El perfil instala:
+
+- `media-fonts/noto`
+- `media-fonts/noto-cjk`
+- `media-fonts/noto-emoji`
+
+Tambien crea `/etc/fonts/local.conf` con preferencias para `Noto Sans`, `Noto Serif`, `Noto Sans Mono`, variantes CJK y `Noto Color Emoji`.
+
+Esto ayuda a que KDE Plasma, Sway, terminales, navegadores y apps GTK/Qt rendericen emojis y caracteres chinos, japoneses y coreanos sin cuadros vacios.
+
 ## Despues De Instalar
 
 Actualiza el sistema:
@@ -307,7 +321,7 @@ aes avx avx2 bmi1 bmi2 f16c fma3 mmx mmxext pclmul popcnt rdrand sha sse sse2 ss
 
 ## Archivos Importantes
 
-- `gentoo.conf`: perfil listo para la HP de Ismael.
+- `gentoo.conf`: perfil listo para la HP Pavilion 15-eh0xxx.
 - `gentoo.conf.example`: ejemplo general con las variables nuevas de Portage.
 - `scripts/main.sh`: aplica las optimizaciones de hardware durante la instalacion.
 - `configure`: conserva las variables nuevas si usas el configurador TUI.
