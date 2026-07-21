@@ -1,3 +1,18 @@
+# Gentoo-HP
+
+Gentoo installer profile for an HP Pavilion Laptop 15-eh0xxx tuned for:
+
+- AMD Ryzen 5 4500U / Renoir (`znver2`)
+- AMD Radeon Vega integrated graphics (`amdgpu radeonsi`)
+- Intel Wi-Fi 6 AX200
+- NVMe storage
+- systemd, Btrfs root, LUKS encryption, and locally compiled Gentoo kernel
+
+The hardware-specific configuration lives in `gentoo.conf`. Before running the
+installer, replace `TARGET_DISK` with the real target disk from the live ISO and
+set `I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=true`. The default file is
+intentionally locked so it cannot erase the current Fedora install by accident.
+
 ## About gentoo-install
 
 This project aspires to be your favourite way to install gentoo.

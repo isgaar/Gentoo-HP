@@ -286,6 +286,26 @@ SELECT_MIRRORS=true
 # take significantly longer (~5-10min).
 SELECT_MIRRORS_LARGE_FILE=false
 
+# Optional Portage tuning. Leave empty to keep the stage3 defaults.
+# CPU_FLAGS_X86, VIDEO_CARDS, INPUT_DEVICES, L10N, and LINGUAS are written to
+# /etc/portage/package.use because current Gentoo documentation recommends that
+# location for USE_EXPAND values.
+PORTAGE_COMMON_FLAGS=""
+PORTAGE_MAKEOPTS=""
+PORTAGE_EMERGE_DEFAULT_OPTS=""
+PORTAGE_FEATURES=""
+PORTAGE_USE=""
+PORTAGE_ACCEPT_LICENSE=""
+PORTAGE_CPU_FLAGS_X86=""
+PORTAGE_VIDEO_CARDS=""
+PORTAGE_INPUT_DEVICES=""
+PORTAGE_L10N=""
+PORTAGE_LINGUAS=""
+
+# Kernel modules to force into the generated dracut initramfs.
+# Useful for laptop storage/GPU modules such as nvme and amdgpu.
+DRACUT_FORCE_DRIVERS=()
+
 
 ################################################
 # Additional (optional) configuration

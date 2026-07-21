@@ -92,6 +92,8 @@ function configure_portage() {
 	touch_or_die 0644 "/etc/portage/package.keywords/zz-autounmask"
 	touch_or_die 0644 "/etc/portage/package.license"
 
+	configure_portage_tuning
+
 	if [[ $SELECT_MIRRORS == "true" ]]; then
 		einfo "Temporarily installing mirrorselect"
 		try emerge --verbose --oneshot app-portage/mirrorselect
@@ -111,6 +113,77 @@ function configure_portage() {
 
 	chmod 644 /etc/portage/make.conf \
 		|| die "Could not chmod 644 /etc/portage/make.conf"
+}
+
+function append_make_conf_setting() {
+	local key="$1"
+	local value="$2"
+
+	[[ -n $value ]] \
+		|| return 0
+
+	printf '%s=%s\n' "$key" "${value@Q}" >> /etc/portage/make.conf \
+		|| die "Could not write $key to /etc/portage/make.conf"
+}
+
+function configure_portage_tuning() {
+	local wrote_make_conf=false
+
+	if [[ -n ${PORTAGE_COMMON_FLAGS-} ]]; then
+		{
+			echo
+			echo "# Hardware-specific compiler tuning"
+			printf 'COMMON_FLAGS=%s\n' "${PORTAGE_COMMON_FLAGS@Q}"
+			echo 'CFLAGS="${COMMON_FLAGS}"'
+			echo 'CXXFLAGS="${COMMON_FLAGS}"'
+			echo 'FCFLAGS="${COMMON_FLAGS}"'
+			echo 'FFLAGS="${COMMON_FLAGS}"'
+		} >> /etc/portage/make.conf \
+			|| die "Could not write hardware compiler tuning to /etc/portage/make.conf"
+		wrote_make_conf=true
+	fi
+
+	append_make_conf_setting MAKEOPTS "${PORTAGE_MAKEOPTS-}"
+	append_make_conf_setting EMERGE_DEFAULT_OPTS "${PORTAGE_EMERGE_DEFAULT_OPTS-}"
+	append_make_conf_setting FEATURES "${PORTAGE_FEATURES-}"
+	append_make_conf_setting USE "${PORTAGE_USE-}"
+	append_make_conf_setting ACCEPT_LICENSE "${PORTAGE_ACCEPT_LICENSE-}"
+
+	if [[ $wrote_make_conf == true || -n ${PORTAGE_MAKEOPTS-}${PORTAGE_EMERGE_DEFAULT_OPTS-}${PORTAGE_FEATURES-}${PORTAGE_USE-}${PORTAGE_ACCEPT_LICENSE-} ]]; then
+		einfo "Applied Portage hardware tuning"
+	fi
+
+	if [[ -n ${PORTAGE_CPU_FLAGS_X86-} ]]; then
+		einfo "Configuring CPU_FLAGS_X86"
+		printf '*/* CPU_FLAGS_X86: %s\n' "$PORTAGE_CPU_FLAGS_X86" > /etc/portage/package.use/00cpu-flags \
+			|| die "Could not write CPU_FLAGS_X86 package.use"
+	fi
+
+	if [[ -n ${PORTAGE_VIDEO_CARDS-} ]]; then
+		einfo "Configuring VIDEO_CARDS"
+		printf '*/* VIDEO_CARDS: %s\n' "$PORTAGE_VIDEO_CARDS" > /etc/portage/package.use/00video-cards \
+			|| die "Could not write VIDEO_CARDS package.use"
+	fi
+
+	if [[ -n ${PORTAGE_INPUT_DEVICES-} ]]; then
+		einfo "Configuring INPUT_DEVICES"
+		printf '*/* INPUT_DEVICES: %s\n' "$PORTAGE_INPUT_DEVICES" > /etc/portage/package.use/00input-devices \
+			|| die "Could not write INPUT_DEVICES package.use"
+	fi
+
+	if [[ -n ${PORTAGE_L10N-}${PORTAGE_LINGUAS-} ]]; then
+		einfo "Configuring locale USE_EXPAND values"
+		: > /etc/portage/package.use/00local \
+			|| die "Could not write locale package.use"
+		if [[ -n ${PORTAGE_L10N-} ]]; then
+			printf '*/* L10N: %s\n' "$PORTAGE_L10N" >> /etc/portage/package.use/00local \
+				|| die "Could not write L10N package.use"
+		fi
+		if [[ -n ${PORTAGE_LINGUAS-} ]]; then
+			printf '*/* LINGUAS: %s\n' "$PORTAGE_LINGUAS" >> /etc/portage/package.use/00local \
+				|| die "Could not write LINGUAS package.use"
+		fi
+	fi
 }
 
 function enable_sshd() {
@@ -154,6 +227,10 @@ function generate_initramfs() {
 	kver="${kver#linux-}"
 
 	dracut_opts=()
+	local force_drivers="${DRACUT_FORCE_DRIVERS[*]-}"
+	[[ -n $force_drivers ]] \
+		&& dracut_opts+=("--force-drivers" "$force_drivers")
+
 	if [[ $SYSTEMD == "true" && $SYSTEMD_INITRAMFS_SSHD == "true" ]]; then
 		cd /tmp || die "Could not change into /tmp"
 		try git clone https://github.com/gsauthof/dracut-sshd
@@ -328,6 +405,11 @@ function install_kernel_bios() {
 }
 
 function install_kernel() {
+	einfo "Installing linux-firmware"
+	echo "sys-kernel/linux-firmware linux-fw-redistributable no-source-code" >> /etc/portage/package.license \
+		|| die "Could not write to /etc/portage/package.license"
+	try emerge --verbose sys-kernel/linux-firmware
+
 	# Install vanilla kernel
 	einfo "Installing vanilla kernel and related tools"
 
@@ -337,10 +419,6 @@ function install_kernel() {
 		install_kernel_bios
 	fi
 
-	einfo "Installing linux-firmware"
-	echo "sys-kernel/linux-firmware linux-fw-redistributable no-source-code" >> /etc/portage/package.license \
-		|| die "Could not write to /etc/portage/package.license"
-	try emerge --verbose linux-firmware
 }
 
 function add_fstab_entry() {
