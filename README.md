@@ -14,6 +14,10 @@ Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 - Kernel compilado localmente con `sys-kernel/gentoo-kernel`
 - Root en Btrfs con LUKS
 - NetworkManager + iwd para Wi-Fi
+- Sway como entorno grafico Wayland
+- greetd + tuigreet para iniciar sesion en Sway
+- foot, waybar, wofi, mako, swaylock, swayidle y wl-clipboard
+- Teclado `latam` y touchpad con tap/natural scroll en Sway
 - TLP con soporte `ppd`, habilitando `tlp.service` y `tlp-pd.service`
 - Instalacion automatica al unico NVMe detectado
 - Arranque UEFI obligatorio, sin modo BIOS
@@ -193,10 +197,11 @@ Cuando confirmes, hara en resumen:
 6. Descargar y extraer stage3 `amd64-systemd`.
 7. Configurar Portage para Ryzen 5 4500U y Radeon Vega.
 8. Compilar kernel Gentoo desde fuente.
-9. Instalar firmware, NetworkManager, iwd, TLP y `tlp-pd`.
+9. Instalar firmware, NetworkManager, iwd, Sway, greetd, tuigreet, TLP y `tlp-pd`.
 10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo.
 12. Crear el usuario `ismael`, configurar `sudo` y pedir su contrasena.
+13. Crear configuracion basica de Sway para `ismael` y habilitar `greetd`.
 
 ## Primer Arranque
 
@@ -208,9 +213,22 @@ reboot
 
 Retira el USB o elige el disco interno desde el menu UEFI.
 
-Al arrancar Gentoo te pedira la contrasena LUKS. Luego entraras a un sistema base, no a KDE completo. Puedes iniciar sesion como `ismael` usando la contrasena que definiste durante la instalacion.
+Al arrancar Gentoo te pedira la contrasena LUKS. Despues aparecera `tuigreet`, el login de texto de `greetd`.
 
-La idea es dejar una base optimizada para instalar despues el escritorio que quieras.
+Inicia sesion como `ismael` usando la contrasena que definiste durante la instalacion. El comando de sesion por defecto es:
+
+```bash
+dbus-run-session sway
+```
+
+Atajos iniciales en Sway:
+
+- `Super + Enter`: abrir terminal `foot`
+- `Super + d`: abrir launcher `wofi`
+- `Super + Shift + q`: cerrar ventana
+- `Super + Shift + c`: recargar configuracion
+- `Super + Shift + e`: salir de Sway
+- `Print`: seleccionar region y copiar captura al portapapeles
 
 Para conectarte por Wi-Fi en consola:
 
