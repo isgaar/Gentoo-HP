@@ -14,6 +14,7 @@ Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 - Kernel compilado localmente con `sys-kernel/gentoo-kernel`
 - Root en Btrfs con LUKS
 - NetworkManager + iwd para Wi-Fi
+- Aceleracion AMD Renoir/Vega con Mesa, RadeonSI, RADV, VA-API, VDPAU y Vulkan
 - SDDM como gestor de inicio de sesion
 - KDE Plasma instalado con soporte Wayland
 - Sway como entorno grafico Wayland
@@ -202,7 +203,8 @@ Cuando confirmes, hara en resumen:
 10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo.
 12. Crear el usuario `ismael`, configurar `sudo` y pedir su contrasena.
-13. Crear configuracion basica de Sway para `ismael` y habilitar `sddm`.
+13. Configurar aceleracion de video para Radeon Vega: Mesa/RadeonSI/RADV, VA-API, VDPAU, Vulkan, FFmpeg, GStreamer y mpv.
+14. Crear configuracion basica de Sway para `ismael` y habilitar `sddm`.
 
 ## Primer Arranque
 
@@ -238,6 +240,48 @@ O con NetworkManager:
 ```bash
 nmcli device wifi list
 nmcli device wifi connect "NOMBRE_DE_TU_WIFI" password "TU_PASSWORD"
+```
+
+## Aceleracion De Video AMD
+
+El perfil esta ajustado para la GPU integrada **AMD Radeon Vega / Renoir** del Ryzen 5 4500U.
+
+Instala y configura:
+
+- `media-libs/mesa` con `radeonsi`, `vaapi`, `vulkan`, `opencl` y `proprietary-codecs`
+- `media-libs/libva` y `media-video/libva-utils` para VA-API
+- `x11-libs/libvdpau` y `x11-misc/vdpauinfo` para VDPAU
+- `media-libs/vulkan-loader` y `dev-util/vulkan-tools` para Vulkan/RADV
+- `media-video/ffmpeg` con `vaapi`, `vdpau`, `vulkan`, `opencl` y `opengl`
+- `media-plugins/gst-plugins-vaapi` para apps que usan GStreamer
+- `media-video/mpv` con aceleracion VA-API/VDPAU/Vulkan
+- `x11-apps/mesa-progs` para `glxinfo`
+- `x11-drivers/xf86-video-amdgpu` para Xorg/SDDM cuando use sesion X11
+
+Tambien crea:
+
+```text
+/etc/environment.d/90-amd-renoir-gpu.conf
+/etc/profile.d/90-amd-renoir-gpu.sh
+```
+
+con:
+
+```bash
+LIBVA_DRIVER_NAME=radeonsi
+VDPAU_DRIVER=radeonsi
+AMD_VULKAN_ICD=RADV
+MESA_VK_WSI_PRESENT_MODE=mailbox
+```
+
+Para probar la aceleracion:
+
+```bash
+vainfo
+vdpauinfo
+vulkaninfo --summary
+glxinfo -B
+mpv --hwdec=auto archivo.mp4
 ```
 
 ## Despues De Instalar
