@@ -13,20 +13,32 @@ Esta version parte de `oddlama/gentoo-install`, pero ya viene ajustada para este
 - Root en Btrfs con LUKS
 - NetworkManager + iwd para Wi-Fi
 - `power-profiles-daemon` e `irqbalance` para portatil
+- Instalacion automatica al unico NVMe detectado
+- Arranque UEFI obligatorio, sin modo BIOS
 
 ## Advertencia Importante
 
 La configuracion incluida esta pensada para instalar Gentoo usando un disco completo.
 
-Si apuntas `TARGET_DISK` al NVMe donde esta Fedora, el instalador va a borrar Fedora y reparticionar ese disco. Haz respaldo antes. Si quieres dual boot o conservar particiones existentes, no uses este `gentoo.conf` tal cual.
-
-Por seguridad, el archivo `gentoo.conf` esta bloqueado por defecto:
+El modo por defecto es:
 
 ```bash
-I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=false
+TARGET_DISK="auto-nvme"
 ```
 
-No cambies eso a `true` hasta revisar y corregir `TARGET_DISK`.
+Eso significa que el instalador buscara automaticamente un disco `/dev/nvme*n*` y lo usara como destino. Para evitar accidentes, solo continua si encuentra exactamente un NVMe. Si encuentra cero o mas de uno, se detiene.
+
+Si ejecutas esto antes de cambiar el NVMe, y el unico NVMe es el de Fedora, el instalador va a borrar Fedora. Cambia fisicamente al NVMe nuevo antes de correr `./install`.
+
+El perfil es UEFI-only. Si arrancas el USB en modo legacy/BIOS, aborta.
+
+El archivo `gentoo.conf` ya viene desbloqueado para el modo automatico:
+
+```bash
+I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=true
+```
+
+Aunque este desbloqueado, el instalador todavia muestra el layout antes de particionar. Confirma solo si el NVMe mostrado es el correcto.
 
 ## Ya Tengo El USB LiveGUI, Ahora Que Hago
 
@@ -65,28 +77,26 @@ emerge --ask dev-vcs/git
 
 ## Encontrar El Disco Correcto
 
-Antes de instalar, identifica el disco. En tu Fedora actual se vio como:
+Antes de instalar, identifica el disco. Si ya cambiaste el NVMe, deberia aparecer el nuevo disco como algo similar a:
 
 ```text
-/dev/nvme0n1  WD Green SN350 2TB
+/dev/nvme0n1  MODELO_DEL_NVME_NUEVO
 ```
 
-En el LiveGUI revisalo otra vez:
+En el LiveGUI revisalo:
 
 ```bash
 lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINTS
 ls -l /dev/disk/by-id/
 ```
 
-Si aparece un nombre estable en `/dev/disk/by-id/`, usalo. Suele verse parecido a:
+Si solo hay un NVMe, no tienes que editar `TARGET_DISK`; el instalador lo detecta solo.
 
-```text
-/dev/disk/by-id/nvme-WD_Green_SN350_...
-```
+Si hay mas de un NVMe, el modo automatico se detiene. En ese caso edita `gentoo.conf` y cambia `TARGET_DISK="auto-nvme"` por el disco exacto, por ejemplo `TARGET_DISK="/dev/nvme0n1"`.
 
-Si no aparece `/dev/disk/by-id/`, puedes usar `/dev/nvme0n1`, pero revisa dos veces con `lsblk`.
+## Revisar La Configuracion
 
-## Editar La Configuracion
+Normalmente ya no tienes que editar `gentoo.conf` para el disco. Aun asi, puedes revisarlo:
 
 Abre `gentoo.conf`:
 
@@ -94,22 +104,16 @@ Abre `gentoo.conf`:
 nano gentoo.conf
 ```
 
-Cambia esta linea:
+El modo rapido es:
 
 ```bash
-TARGET_DISK="/dev/disk/by-id/REPLACE_ME_WITH_TARGET_NVME"
+TARGET_DISK="auto-nvme"
 ```
 
-por el disco real. Ejemplo:
+El perfil tambien viene listo para UEFI:
 
 ```bash
-TARGET_DISK="/dev/disk/by-id/nvme-WD_Green_SN350_..."
-```
-
-Luego cambia al final:
-
-```bash
-I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=true
+create_classic_single_disk_layout swap=16GiB type=efi luks=true root_fs=btrfs "$TARGET_DISK"
 ```
 
 Revisa tambien:
@@ -136,19 +140,21 @@ Despues ejecuta:
 ./install
 ```
 
-El instalador va a mostrar el layout de disco antes de hacer cambios. Lee esa pantalla con calma. Si el disco no es el correcto, cancela.
+El instalador va a mostrar el layout de disco antes de hacer cambios. Lee esa pantalla con calma. Debe decir que usara el NVMe nuevo. Si ves el disco equivocado, cancela.
 
 Cuando confirmes, hara en resumen:
 
-1. Particionar el disco en modo EFI.
-2. Crear swap de 16 GiB.
-3. Crear root Btrfs cifrado con LUKS.
-4. Descargar y extraer stage3 `amd64-systemd`.
-5. Configurar Portage para Ryzen 5 4500U y Radeon Vega.
-6. Compilar kernel Gentoo desde fuente.
-7. Instalar firmware, NetworkManager, iwd y herramientas del portatil.
-8. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
-9. Crear entrada EFI para arrancar Gentoo.
+1. Verificar que arrancaste en UEFI.
+2. Detectar automaticamente el unico NVMe.
+3. Particionar el NVMe en modo EFI.
+4. Crear swap de 16 GiB.
+5. Crear root Btrfs cifrado con LUKS.
+6. Descargar y extraer stage3 `amd64-systemd`.
+7. Configurar Portage para Ryzen 5 4500U y Radeon Vega.
+8. Compilar kernel Gentoo desde fuente.
+9. Instalar firmware, NetworkManager, iwd y herramientas del portatil.
+10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
+11. Crear entrada EFI para arrancar Gentoo.
 
 ## Primer Arranque
 
