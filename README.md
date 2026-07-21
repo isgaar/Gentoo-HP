@@ -25,6 +25,7 @@ Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 - `.bashrc` preparado con rutas personales, `opencode`, `NO_AT_BRIDGE` y Bash interactivo comodo
 - Instalacion automatica al unico NVMe detectado
 - Arranque UEFI obligatorio, sin modo BIOS
+- GRUB UEFI con tema Zorin extraido para el menu de arranque
 - Usuario normal preguntado durante la instalacion, con `sudo` opcional
 
 ## Advertencia Importante
@@ -203,7 +204,7 @@ Cuando confirmes, hara en resumen:
 8. Compilar kernel Gentoo desde fuente.
 9. Instalar firmware, NetworkManager, iwd, SDDM, KDE Plasma, Sway, TLP y `tlp-pd`.
 10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
-11. Crear entrada EFI para arrancar Gentoo.
+11. Crear entrada EFI para arrancar Gentoo y configurar GRUB UEFI con tema personalizado.
 12. Preguntar el usuario normal, pedir su contrasena y preguntar si tendra `sudo`.
 13. Crear su `.bashrc` con rutas personales, `opencode`, `NO_AT_BRIDGE`, `.bashrc.d` y completado sin distinguir mayusculas.
 14. Configurar aceleracion de video para Radeon Vega: Mesa/RadeonSI/RADV, VA-API, VDPAU, Vulkan, FFmpeg, GStreamer y mpv.
@@ -232,6 +233,26 @@ Atajos iniciales en Sway:
 - `Super + Shift + c`: recargar configuracion
 - `Super + Shift + e`: salir de Sway
 - `Print`: seleccionar region y copiar captura al portapapeles
+
+El menu de arranque sera GRUB UEFI con el tema Zorin extraido. El instalador instala el tema en:
+
+```text
+/boot/efi/grub/themes/gentoo-hp-zorin
+```
+
+Tambien escribe:
+
+```text
+/boot/efi/grub/grub.cfg
+/etc/default/grub
+```
+
+El arranque principal del menu usa el kernel e initramfs que el instalador copia a la particion EFI:
+
+```text
+/boot/efi/vmlinuz.efi
+/boot/efi/initramfs.img
+```
 
 Para conectarte por Wi-Fi en consola:
 
@@ -334,6 +355,7 @@ aes avx avx2 bmi1 bmi2 f16c fma3 mmx mmxext pclmul popcnt rdrand sha sse sse2 ss
 ## Archivos Importantes
 
 - `gentoo.conf`: perfil listo para la HP Pavilion 15-eh0xxx.
+- `contrib/grub/themes/gentoo-hp-zorin`: tema GRUB extraido desde `zoringrub`.
 - `gentoo.conf.example`: ejemplo general con las variables nuevas de Portage.
 - `scripts/main.sh`: aplica las optimizaciones de hardware durante la instalacion.
 - `configure`: conserva las variables nuevas si usas el configurador TUI.
