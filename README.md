@@ -14,7 +14,7 @@ Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 - Kernel compilado localmente con `sys-kernel/gentoo-kernel`
 - Root en Btrfs con LUKS
 - NetworkManager + iwd para Wi-Fi
-- `power-profiles-daemon` e `irqbalance` para portatil
+- TLP con soporte `ppd`, habilitando `tlp.service` y `tlp-pd.service`
 - Instalacion automatica al unico NVMe detectado
 - Arranque UEFI obligatorio, sin modo BIOS
 - Usuario `ismael` con `sudo` y contrasena propia
@@ -193,7 +193,7 @@ Cuando confirmes, hara en resumen:
 6. Descargar y extraer stage3 `amd64-systemd`.
 7. Configurar Portage para Ryzen 5 4500U y Radeon Vega.
 8. Compilar kernel Gentoo desde fuente.
-9. Instalar firmware, NetworkManager, iwd y herramientas del portatil.
+9. Instalar firmware, NetworkManager, iwd, TLP y `tlp-pd`.
 10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo.
 12. Crear el usuario `ismael`, configurar `sudo` y pedir su contrasena.
