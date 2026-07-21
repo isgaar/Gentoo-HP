@@ -61,18 +61,33 @@ Si ya estas como root, puedes seguir.
 
 ## Clonar Este Repositorio
 
-Dentro del LiveGUI:
+Primero verifica que tengas internet:
+
+```bash
+ping -c 3 gentoo.org
+```
+
+Si `git` no viene instalado en el LiveGUI, instalalo asi:
+
+```bash
+sudo -i
+emerge --sync
+emerge --ask dev-vcs/git
+```
+
+Si `emerge --sync` tarda demasiado o falla por no tener arbol de Portage listo, usa esta variante:
+
+```bash
+sudo -i
+emerge-webrsync
+emerge --ask dev-vcs/git
+```
+
+Cuando `git` ya exista, clona el repositorio:
 
 ```bash
 git clone https://github.com/isgaar/Gentoo-HP.git
 cd Gentoo-HP
-```
-
-Si `git` no estuviera disponible en el ISO:
-
-```bash
-emerge --sync
-emerge --ask dev-vcs/git
 ```
 
 ## Encontrar El Disco Correcto
