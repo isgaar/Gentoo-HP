@@ -22,6 +22,7 @@ Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 - Teclado `latam` y touchpad con tap/natural scroll en Sway
 - TLP con soporte `ppd`, habilitando `tlp.service` y `tlp-pd.service`
 - Fuentes Noto, Noto CJK y Noto Color Emoji para emojis y caracteres asiaticos
+- `.bashrc` preparado con rutas personales, `opencode`, `NO_AT_BRIDGE` y Bash interactivo comodo
 - Instalacion automatica al unico NVMe detectado
 - Arranque UEFI obligatorio, sin modo BIOS
 - Usuario normal preguntado durante la instalacion, con `sudo` opcional
@@ -204,9 +205,10 @@ Cuando confirmes, hara en resumen:
 10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo.
 12. Preguntar el usuario normal, pedir su contrasena y preguntar si tendra `sudo`.
-13. Configurar aceleracion de video para Radeon Vega: Mesa/RadeonSI/RADV, VA-API, VDPAU, Vulkan, FFmpeg, GStreamer y mpv.
-14. Configurar fuentes Unicode para emojis y caracteres CJK.
-15. Crear configuracion basica de Sway para ese usuario y habilitar `sddm`.
+13. Crear su `.bashrc` con rutas personales, `opencode`, `NO_AT_BRIDGE`, `.bashrc.d` y completado sin distinguir mayusculas.
+14. Configurar aceleracion de video para Radeon Vega: Mesa/RadeonSI/RADV, VA-API, VDPAU, Vulkan, FFmpeg, GStreamer y mpv.
+15. Configurar fuentes Unicode para emojis y caracteres CJK.
+16. Crear configuracion basica de Sway para ese usuario y habilitar `sddm`.
 
 ## Primer Arranque
 
@@ -243,6 +245,16 @@ O con NetworkManager:
 nmcli device wifi list
 nmcli device wifi connect "NOMBRE_DE_TU_WIFI" password "TU_PASSWORD"
 ```
+
+## Bash Del Usuario
+
+El instalador crea `/home/<usuario>/.bashrc` con una plantilla limpia:
+
+- carga `/etc/bash/bashrc` en Gentoo o `/etc/bashrc` si existe;
+- agrega una sola vez `$HOME/.opencode/bin`, `$HOME/.local/bin` y `$HOME/bin` al `PATH`;
+- exporta `NO_AT_BRIDGE=1`;
+- carga archivos en `$HOME/.bashrc.d/`;
+- activa completado, globbing y correcciones de `cd` sin distinguir mayusculas en shells interactivos.
 
 ## Aceleracion De Video AMD
 
