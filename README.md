@@ -1,236 +1,218 @@
 # Gentoo-HP
 
-Gentoo installer profile for an HP Pavilion Laptop 15-eh0xxx tuned for:
+Perfil de instalacion de Gentoo para una **HP Pavilion Laptop 15-eh0xxx** como la de Ismael.
 
-- AMD Ryzen 5 4500U / Renoir (`znver2`)
-- AMD Radeon Vega integrated graphics (`amdgpu radeonsi`)
-- Intel Wi-Fi 6 AX200
-- NVMe storage
-- systemd, Btrfs root, LUKS encryption, and locally compiled Gentoo kernel
+Esta version parte de `oddlama/gentoo-install`, pero ya viene ajustada para este hardware:
 
-The hardware-specific configuration lives in `gentoo.conf`. Before running the
-installer, replace `TARGET_DISK` with the real target disk from the live ISO and
-set `I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=true`. The default file is
-intentionally locked so it cannot erase the current Fedora install by accident.
+- CPU AMD Ryzen 5 4500U / Renoir, usando `-march=znver2`
+- GPU AMD Radeon Vega integrada, usando `VIDEO_CARDS="amdgpu radeonsi"`
+- Wi-Fi Intel Wi-Fi 6 AX200
+- Disco NVMe
+- Gentoo `amd64` con `systemd`
+- Kernel compilado localmente con `sys-kernel/gentoo-kernel`
+- Root en Btrfs con LUKS
+- NetworkManager + iwd para Wi-Fi
+- `power-profiles-daemon` e `irqbalance` para portatil
 
-## About gentoo-install
+## Advertencia Importante
 
-This project aspires to be your favourite way to install gentoo.
-It aims to provide a smooth installation experience, both for beginners and experts.
-You may configure it by using a menuconfig-inspired interface or simply via a config file.
+La configuracion incluida esta pensada para instalar Gentoo usando un disco completo.
 
-It supports the most common disk layouts, different file systems like ext4, ZFS and btrfs as well
-as additional layers such as LUKS or mdraid. It also supports both EFI (recommended) and BIOS boot,
-and can be used with systemd or OpenRC as the init system. SSH can also be configured to allow using an automation framework
-like [Ansible](https://github.com/ansible/ansible) or [Fora](https://github.com/oddlama/fora) to automate beyond system installation.
+Si apuntas `TARGET_DISK` al NVMe donde esta Fedora, el instalador va a borrar Fedora y reparticionar ese disco. Haz respaldo antes. Si quieres dual boot o conservar particiones existentes, no uses este `gentoo.conf` tal cual.
 
-[Usage](#usage) |
-[Overview](#overview) |
-[Updating the Kernel](#updating-the-kernel) |
-[Recommendations](#recommendations) |
-[FAQ](#troubleshooting-and-faq)
-
-![](contrib/screenshot_configure.png)
-
-This installer might appeal to you if
-
-- you want to try gentoo without initially investing a lot of time, or fully committing to it yet.
-- you already are a gentoo expert but want an automatic and repeatable best-practices installation.
-
-Of course, we do encourage everyone to install gentoo manually. You will learn a lot if you
-haven't done so already.
-
-## Usage
-
-First, boot into a live environment of your choice. I recommend using an [Arch Linux](https://www.archlinux.org/download/) live ISO,
-as the installer will then be able to automatically download required programs or setup ZFS support on the fly.
-Afterwards, proceed with the following steps:
+Por seguridad, el archivo `gentoo.conf` esta bloqueado por defecto:
 
 ```bash
-pacman -Sy git  # (Archlinux) Install git in live environment, then clone:
-git clone "https://github.com/oddlama/gentoo-install"
-cd gentoo-install
-./configure     # configure to your liking, save as gentoo.conf
-./install       # begin installation
+I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=false
 ```
 
-Every option is explained in detail in `gentoo.conf.example` and in the help menus of the TUI configurator.
-When installing, you will be asked to review the partitioning before anything critical is done.
+No cambies eso a `true` hasta revisar y corregir `TARGET_DISK`.
 
-The installer should be able to run without any user supervision after partitioning, but depending
-on the current state of the gentoo repository, you might need to intervene in case a package fails
-to emerge. The critical commands will ask you what to do in case of a failure. If you encounter a
-problem you cannot solve, you might want to consider getting in contact with some experienced people
-on [IRC](https://www.gentoo.org/get-involved/irc-channels/) or [Discord](https://discord.com/invite/gentoolinux).
+## Ya Tengo El USB LiveGUI, Ahora Que Hago
 
-If you need to enter an installed system in a chroot to fix something (e.g. after rebooting your live system),
-you can always clone the installer, mount your main drive under `/mnt` and use `./install --chroot /mnt` to
-just chroot into your system.
+Si Fedora Media Writer ya termino de grabar `livegui-amd64-...iso`, no necesitas montar el USB desde Fedora. Lo que sigue es reiniciar y arrancar desde ese USB.
 
-## Overview
+1. Reinicia la laptop.
+2. En HP normalmente entra al menu de arranque con `Esc` y luego `F9`.
+3. Elige el USB en modo UEFI.
+4. Entra al entorno LiveGUI de Gentoo.
+5. Conectate a internet desde la interfaz grafica o por cable.
+6. Abre una terminal.
 
-The installer performs the following main steps (in roughly this order),
-with some parts depending on the chosen configuration:
-
-1. Partition disks (highly dependent on configuration)
-2. Download and extract stage3 tarball (with cryptographic verification)
-   \[Continues in chroot from here\]
-3. Setup portage (initial rsync/git sync, run mirrorselect, create zz-autounmask files)
-4. Base system configuration (hostname, timezone, keymap, locales)
-5. Install required packages (git, kernel, ...)
-6. Make system bootable (generate fstab, build initramfs, create efibootmgr/syslinux boot entry)
-7. Ensure minimal working system (automatic wired networking, install eix, set root password)
-   - (Optional) Install sshd with secure config (no password logins)
-   - (Optional) Install additional packages provided in config
-
-The goal of the installer is just to setup a minimal gentoo system following best-practices.
-Anything beyond that is considered out-of-scope (with the exception of configuring sshd).
-Here are some things that you might want to consider doing after the system installation is finished:
-
-1. Read the news with `eselect news read`.
-2. Compile a custom kernel and remove `gentoo-kernel-bin` (or `gentoo-kernel` if you used `KERNEL_TYPE=source`)
-3. Adjust `/etc/portage/make.conf`
-   - Set `CFLAGS` to `<march_native_flags> -O2 -pipe` for native builds by using the `resolve-march-native` tool
-   - Set `CPU_FLAGS_X86` using the `cpuid2cpuflags` tool
-4. Use a safe umask like `umask 077`
-
-### (Optional) sshd
-
-The script can provide a fully configured ssh daemon with reasonably good security settings.
-It will by default only allow ed25519 keys, restrict key exchange
-algorithms to a reasonable subset, disable any password based authentication,
-and only allow root to login.
-
-You can provide keys that will be written to root's `.ssh/authorized_keys` file. This will allow
-you to directly continue your setup with your favourite infrastructure management software.
-
-### (Optional) Additional packages
-
-You can add any amount of additional packages to be installed on the target system.
-These will simply be passed to a final `emerge` call before the script is done,
-where autounmasking will also be done automatically. It is recommended to keep
-this to a minimum, because of the quite "interactive" nature of gentoo package management ;)
-
-## Updating the kernel
-
-By default, the installed system uses gentoo's binary kernel distribution (`sys-kernel/gentoo-kernel-bin`)
-together with an initramfs generated by dracut. This ensures that the installed system works on all common hardware configurations.
-Alternatively, you can set `KERNEL_TYPE=source` to build the kernel from source using `sys-kernel/gentoo-kernel`
-(same distribution config, compiled locally).
-Feel free to replace this with a custom-built kernel (and possibly remove/adjust the initramfs) when the system is booted.
-
-The installer will provide the convenience script `generate_initramfs.sh` in `/boot/efi/`
-or `/boot/bios` which may be used to generate a new initramfs for the given kernel version.
-Depending on whether your system uses EFI or BIOS boot, you will also find your kernel and initramfs in different locations:
+En la terminal entra como root:
 
 ```bash
-# EFI
-kernel="/boot/efi/vmlinuz.efi"
-initrd="/boot/efi/initramfs.img"
-# BIOS
-kernel="/boot/bios/vmlinuz-current"
-initrd="/boot/bios/initramfs.img"
+sudo -i
 ```
 
-In both cases, the update procedure is as follows:
+Si ya estas como root, puedes seguir.
 
-1. Emerge new kernel
-2. `eselect kernel set <kver>`
-3. Backup old kernel and initramfs (`mv "$kernel"{,.bak}`, `mv "$initrd"{,.bak}`)
-4. Generate new initramfs for this kernel `generate_initramfs.sh <kver> "$initrd"`
-5. Copy new kernel `cp /boot/kernel-<kver> "$kernel"` (for systemd) or `cp /boot/vmlinuz-<kver> "$kernel"` (for openrc)
+## Clonar Este Repositorio
 
-## Recommendations
+Dentro del LiveGUI:
 
-This project started out as a way of documenting a best-practices installation for myself.
-As the project grew larger, I've added more configuration options to suit legacy needs.
-Below I've outlined several decisions I've made for this project, or decisions you
-have during configuration. If you intend on setting up a modern system, you might want
-to check them out. Please keep in mind that those are all based on my personal opinions and
-experience. Your mileage may vary.
-
-#### EFI vs BIOS
-
-Use EFI. BIOS is old and deprecated for a long time now.
-Only certain VPS hosters may require you to use BIOS still (time to write to them about that!)
-
-#### EFIstub booting
-
-Don't install a bootloader when this script is done, except you absolutely need one.
-The kernel can directly be booted by EFI without need for a bootloader.
-By default, this script will use efibootmgr to add a bootentry directly to your "mainboard's bootselect" (typically F12).
-Nowadays, there's just no reason to use GRUB, syslinux, or similar bootloaders by default.
-They only add additional time to your boot, and even dualbooting Windows works just fine without one.
-Only if you require frequent editing of kernel parameters, or want kernel autodiscovery from attached media
-you might want to consider using one of these. For the average (advanced) user this isn't necessary.
-
-If you want to add more boot options or want to learn about efibootmgr, refer to [this page on the gentoo wiki](https://wiki.gentoo.org/wiki/Efibootmgr).
-
-#### Modern file systems
-
-I recommend using a modern file system like ZFS, both on desktops and servers.
-It provides transparent block-level compression, instant snapshots and full-disk encryption.
-Generally, encrypting your root fs doesn't cost you anything and protects your data in case you lose your device.
-
-#### Systemd vs OpenRC
-
-I will not entertain the religious eternal debate here. Both are fine init systems, and
-I've been using both *a lot*. If you cannot decide, here are some objective facts:
-
-- OpenRC is a service manager. Setting up all the other services is a lot of work, but you will learn a lot.
-- Systemd is an OS-level software suite. It brings an insane amount of features with a steep learning curve.
-
-Here's a non-exhaustive list of things you will ~do manually~ learn when using OpenRC,
-that are already provided for in systemd: udev, dhcp, acpi events (power/sleep button),
-cron jobs, reliable syslog, logrotate, process sandboxing, persistent backlight setting, persistent audio mute-status, user-owned login sessions, ...
-
-Make of this what you will, both have their own quirks. Choose your poison.
-
-#### Miscellaneous
-
-- Use the newer iwd for WiFi instead of wpa_supplicant
-- (If systemd) Use timers instead of cron jobs
-
-## Troubleshooting and FAQ
-
-After the initial sanity check, the script should be able to finish unattendedly.
-But given the unpredictability of future gentoo versions, you might still run into issues
-once in a while.
-
-The script checks every command for success, so if anything fails during installation,
-you will be given a proper message of what went wrong. Inside the chroot,
-most commands will be executed in a checked loop, and allow you to interactively
-fix problems with a shell, to retry, or to skip the command. You can report
-issues specific to this script on the issue tracker. To seek help
-regarding gentoo in general, visit the official [IRC](https://www.gentoo.org/get-involved/irc-channels/)
-or [Discord](https://discord.com/invite/gentoolinux).
-
-If you experience any issues after rebooting and need to fix something inside the chroot,
-you can use the installer to chroot into an existing system. Run `./install --help` for more infos.
-
-#### Q: ZFS cannot be installed in the chroot due to an unsupported kernel version
-
-**A:** The newest stable ZFS module may require a kernel version that is newer than what is provided on gentoo stable.
-If you encounter this problem, you might be able to fix the problem by switching to testing by dropping to a shell temporarily:
-
-```
-# Press S<Enter> when asked about what to do next.
-# This opens an emergency shell in the chroot.
-echo 'ACCEPT_KEYWORDS="~amd64"' >> /etc/portage/make.conf # Enable testing for your architecture.
-emerge -v gentoo-kernel-bin                               # Update kernel to newest version (or gentoo-kernel if KERNEL_TYPE=source)
-exit # Ctrl-D
-# Now select 'retry' when asked about what to do next.
+```bash
+git clone https://github.com/isgaar/Gentoo-HP.git
+cd Gentoo-HP
 ```
 
-#### Q: I get errors after partitioning about blkid not being able to find a UUID
+Si `git` no estuviera disponible en el ISO:
 
-**A:** Be sure that all devices are unmounted and not in use before starting the script.
-Use `wipefs -a <DEVICE>` on your partitions or fully wipe the disk before use.
-The new partitions probably align with previously existing partitions that had
-filesystems on them. Some filesystems signatures like those of ZFS can coexist with
-other signatures and may cause blkid to find ambiguous information.
+```bash
+emerge --sync
+emerge --ask dev-vcs/git
+```
 
-## References
+## Encontrar El Disco Correcto
 
-* [Gentoo AMD64 Handbook](https://wiki.gentoo.org/wiki/Handbook:AMD64)
-* [Sakaki's EFI Install Guide](https://wiki.gentoo.org/wiki/Sakaki%27s_EFI_Install_Guide)
+Antes de instalar, identifica el disco. En tu Fedora actual se vio como:
+
+```text
+/dev/nvme0n1  WD Green SN350 2TB
+```
+
+En el LiveGUI revisalo otra vez:
+
+```bash
+lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINTS
+ls -l /dev/disk/by-id/
+```
+
+Si aparece un nombre estable en `/dev/disk/by-id/`, usalo. Suele verse parecido a:
+
+```text
+/dev/disk/by-id/nvme-WD_Green_SN350_...
+```
+
+Si no aparece `/dev/disk/by-id/`, puedes usar `/dev/nvme0n1`, pero revisa dos veces con `lsblk`.
+
+## Editar La Configuracion
+
+Abre `gentoo.conf`:
+
+```bash
+nano gentoo.conf
+```
+
+Cambia esta linea:
+
+```bash
+TARGET_DISK="/dev/disk/by-id/REPLACE_ME_WITH_TARGET_NVME"
+```
+
+por el disco real. Ejemplo:
+
+```bash
+TARGET_DISK="/dev/disk/by-id/nvme-WD_Green_SN350_..."
+```
+
+Luego cambia al final:
+
+```bash
+I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=true
+```
+
+Revisa tambien:
+
+```bash
+KEYMAP="la-latin1"
+TIMEZONE="America/Mexico_City"
+LOCALE="es_MX.UTF-8"
+```
+
+Si tu contrasena de cifrado va a tener simbolos raros, conviene usar una frase larga con letras y numeros para evitar problemas de teclado en el arranque.
+
+## Instalar
+
+Puedes dejar que el instalador te pregunte la contrasena LUKS, o definirla antes:
+
+```bash
+export GENTOO_INSTALL_ENCRYPTION_KEY="una frase larga y segura"
+```
+
+Despues ejecuta:
+
+```bash
+./install
+```
+
+El instalador va a mostrar el layout de disco antes de hacer cambios. Lee esa pantalla con calma. Si el disco no es el correcto, cancela.
+
+Cuando confirmes, hara en resumen:
+
+1. Particionar el disco en modo EFI.
+2. Crear swap de 16 GiB.
+3. Crear root Btrfs cifrado con LUKS.
+4. Descargar y extraer stage3 `amd64-systemd`.
+5. Configurar Portage para Ryzen 5 4500U y Radeon Vega.
+6. Compilar kernel Gentoo desde fuente.
+7. Instalar firmware, NetworkManager, iwd y herramientas del portatil.
+8. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
+9. Crear entrada EFI para arrancar Gentoo.
+
+## Primer Arranque
+
+Cuando termine:
+
+```bash
+reboot
+```
+
+Retira el USB o elige el disco interno desde el menu UEFI.
+
+Al arrancar Gentoo te pedira la contrasena LUKS. Luego entraras a un sistema base, no a KDE completo. La idea es dejar una base optimizada para instalar despues el escritorio que quieras.
+
+Para conectarte por Wi-Fi en consola:
+
+```bash
+nmtui
+```
+
+O con NetworkManager:
+
+```bash
+nmcli device wifi list
+nmcli device wifi connect "NOMBRE_DE_TU_WIFI" password "TU_PASSWORD"
+```
+
+## Despues De Instalar
+
+Actualiza el sistema:
+
+```bash
+emerge --sync
+emerge --ask --verbose --update --deep --newuse @world
+```
+
+Comprueba las banderas de CPU:
+
+```bash
+cpuid2cpuflags
+```
+
+El perfil ya deja estas banderas configuradas:
+
+```bash
+aes avx avx2 bmi1 bmi2 f16c fma3 mmx mmxext pclmul popcnt rdrand sha sse sse2 sse3 sse4_1 sse4_2 sse4a ssse3
+```
+
+## Archivos Importantes
+
+- `gentoo.conf`: perfil listo para la HP de Ismael.
+- `gentoo.conf.example`: ejemplo general con las variables nuevas de Portage.
+- `scripts/main.sh`: aplica las optimizaciones de hardware durante la instalacion.
+- `configure`: conserva las variables nuevas si usas el configurador TUI.
+
+## Notas Sobre El Proyecto Base
+
+Este repositorio conserva el instalador original de `oddlama/gentoo-install` como base. El remoto original queda como `upstream`, y este perfil personalizado se publica en:
+
+```text
+https://github.com/isgaar/Gentoo-HP.git
+```
+
+Para ver ayuda del instalador:
+
+```bash
+./install --help
+```
