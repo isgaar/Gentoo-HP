@@ -14,8 +14,9 @@ Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 - Kernel compilado localmente con `sys-kernel/gentoo-kernel`
 - Root en Btrfs con LUKS
 - NetworkManager + iwd para Wi-Fi
+- SDDM como gestor de inicio de sesion
+- KDE Plasma instalado con soporte Wayland
 - Sway como entorno grafico Wayland
-- greetd + tuigreet para iniciar sesion en Sway
 - foot, waybar, wofi, mako, swaylock, swayidle y wl-clipboard
 - Teclado `latam` y touchpad con tap/natural scroll en Sway
 - TLP con soporte `ppd`, habilitando `tlp.service` y `tlp-pd.service`
@@ -197,11 +198,11 @@ Cuando confirmes, hara en resumen:
 6. Descargar y extraer stage3 `amd64-systemd`.
 7. Configurar Portage para Ryzen 5 4500U y Radeon Vega.
 8. Compilar kernel Gentoo desde fuente.
-9. Instalar firmware, NetworkManager, iwd, Sway, greetd, tuigreet, TLP y `tlp-pd`.
+9. Instalar firmware, NetworkManager, iwd, SDDM, KDE Plasma, Sway, TLP y `tlp-pd`.
 10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo.
 12. Crear el usuario `ismael`, configurar `sudo` y pedir su contrasena.
-13. Crear configuracion basica de Sway para `ismael` y habilitar `greetd`.
+13. Crear configuracion basica de Sway para `ismael` y habilitar `sddm`.
 
 ## Primer Arranque
 
@@ -213,13 +214,9 @@ reboot
 
 Retira el USB o elige el disco interno desde el menu UEFI.
 
-Al arrancar Gentoo te pedira la contrasena LUKS. Despues aparecera `tuigreet`, el login de texto de `greetd`.
+Al arrancar Gentoo te pedira la contrasena LUKS. Despues aparecera SDDM.
 
-Inicia sesion como `ismael` usando la contrasena que definiste durante la instalacion. El comando de sesion por defecto es:
-
-```bash
-dbus-run-session sway
-```
+Inicia sesion como `ismael` usando la contrasena que definiste durante la instalacion. En el selector de sesion de SDDM podras elegir KDE Plasma o Sway. Si quieres el escritorio completo, elige Plasma. Si quieres un entorno ligero tipo tiling, elige Sway.
 
 Atajos iniciales en Sway:
 
