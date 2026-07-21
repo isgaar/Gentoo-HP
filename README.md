@@ -15,6 +15,7 @@ Esta version parte de `oddlama/gentoo-install`, pero ya viene ajustada para este
 - `power-profiles-daemon` e `irqbalance` para portatil
 - Instalacion automatica al unico NVMe detectado
 - Arranque UEFI obligatorio, sin modo BIOS
+- Usuario `ismael` con `sudo` y contrasena propia
 
 ## Advertencia Importante
 
@@ -39,6 +40,29 @@ I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=true
 ```
 
 Aunque este desbloqueado, el instalador todavia muestra el layout antes de particionar. Confirma solo si el NVMe mostrado es el correcto.
+
+## Usuario Administrador
+
+El instalador crea el usuario:
+
+```bash
+ismael
+```
+
+Ese usuario queda agregado a `wheel` y puede usar `sudo`. No queda como root directo y no tiene sudo sin contrasena. Cuando uses comandos administrativos, Gentoo pedira la contrasena de `ismael`:
+
+```bash
+sudo emerge --sync
+sudo emerge --ask app-editors/neovim
+```
+
+La contrasena no se guarda en `gentoo.conf`. El instalador la pide de forma interactiva al final con:
+
+```bash
+passwd ismael
+```
+
+Este es el modo recomendable: usuario normal para el dia a dia, `sudo` con contrasena para tareas de administrador, y root solo cuando haga falta.
 
 ## Ya Tengo El USB LiveGUI, Ahora Que Hago
 
@@ -170,6 +194,7 @@ Cuando confirmes, hara en resumen:
 9. Instalar firmware, NetworkManager, iwd y herramientas del portatil.
 10. Crear initramfs con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo.
+12. Crear el usuario `ismael`, configurar `sudo` y pedir su contrasena.
 
 ## Primer Arranque
 
@@ -181,7 +206,9 @@ reboot
 
 Retira el USB o elige el disco interno desde el menu UEFI.
 
-Al arrancar Gentoo te pedira la contrasena LUKS. Luego entraras a un sistema base, no a KDE completo. La idea es dejar una base optimizada para instalar despues el escritorio que quieras.
+Al arrancar Gentoo te pedira la contrasena LUKS. Luego entraras a un sistema base, no a KDE completo. Puedes iniciar sesion como `ismael` usando la contrasena que definiste durante la instalacion.
+
+La idea es dejar una base optimizada para instalar despues el escritorio que quieras.
 
 Para conectarte por Wi-Fi en consola:
 
