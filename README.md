@@ -2,7 +2,9 @@
 
 Perfil de instalacion de Gentoo para una **HP Pavilion Laptop 15-eh0xxx** como la de Ismael.
 
-Esta version parte de `oddlama/gentoo-install`, pero ya viene ajustada para este hardware:
+Este proyecto esta basado explicitamente en el repositorio original
+[oddlama/gentoo-install](https://github.com/oddlama/gentoo-install).
+Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 
 - CPU AMD Ryzen 5 4500U / Renoir, usando `-march=znver2`
 - GPU AMD Radeon Vega integrada, usando `VIDEO_CARDS="amdgpu radeonsi"`
@@ -253,7 +255,9 @@ aes avx avx2 bmi1 bmi2 f16c fma3 mmx mmxext pclmul popcnt rdrand sha sse sse2 ss
 
 ## Notas Sobre El Proyecto Base
 
-Este repositorio conserva el instalador original de `oddlama/gentoo-install` como base. El remoto original queda como `upstream`, y este perfil personalizado se publica en:
+Este repositorio conserva como base el instalador original
+[oddlama/gentoo-install](https://github.com/oddlama/gentoo-install).
+El remoto original queda como `upstream`, y este perfil personalizado se publica en:
 
 ```text
 https://github.com/isgaar/Gentoo-HP.git
