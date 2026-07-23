@@ -5,6 +5,8 @@ resuelven los fixes incorporados y cómo auditar el commit que los introdujo.
 
 La configuración y el diagnóstico de PipeWire, WirePlumber y BlueZ se
 documentan por separado en [`AUDIO-Y-BLUETOOTH.md`](AUDIO-Y-BLUETOOTH.md).
+QEMU/KVM, libvirt y VirtualBox se documentan en
+[`VIRTUALIZATION.md`](VIRTUALIZATION.md).
 
 ## Commit De Los Fixes
 

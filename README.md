@@ -10,6 +10,8 @@ La arquitectura interna y el registro de fixes están documentados en
 [`docs/FUNCIONAMIENTO-Y-FIXES.md`](docs/FUNCIONAMIENTO-Y-FIXES.md).
 La pila multimedia y su diagnóstico están explicados en
 [`docs/AUDIO-Y-BLUETOOTH.md`](docs/AUDIO-Y-BLUETOOTH.md).
+La virtualización se documenta en
+[`docs/VIRTUALIZATION.md`](docs/VIRTUALIZATION.md).
 
 - CPU AMD Ryzen 5 4500U / Renoir, usando `-march=znver2`
 - GPU AMD Radeon Vega integrada, usando `VIDEO_CARDS="amdgpu radeonsi"`
@@ -29,6 +31,7 @@ La pila multimedia y su diagnóstico están explicados en
 - Firefox precompilado mediante `www-client/firefox-bin`
 - PipeWire + WirePlumber con ALSA, compatibilidad Pulse y RTKit
 - BlueZ habilitado para el Intel AX200, Bluedevil y audio Bluetooth
+- QEMU/KVM, libvirt, Virt-Manager y VirtualBox para máquinas virtuales
 - Sway como entorno grafico Wayland
 - foot, waybar, wofi, mako, swaylock, swayidle y wl-clipboard
 - Teclado `latam` y touchpad con tap/natural scroll en Sway
@@ -223,7 +226,7 @@ Cuando confirmes, hara en resumen:
 6. Descargar y extraer stage3 `amd64-systemd`.
 7. Configurar Portage para Ryzen 5 4500U y Radeon Vega.
 8. Compilar kernel Gentoo desde fuente.
-9. Instalar firmware, NetworkManager, iwd, SDDM, KDE Plasma, Sway, TLP, `tlp-pd`, PipeWire, WirePlumber, BlueZ, Dolphin, Konsole, Discover, Flatpak, Fastfetch, Ark y herramientas de compresion.
+9. Instalar firmware, NetworkManager, iwd, SDDM, KDE Plasma, Sway, TLP, `tlp-pd`, PipeWire, WirePlumber, BlueZ, QEMU/KVM, libvirt, Virt-Manager, VirtualBox, Dolphin, Konsole, Discover, Flatpak, Fastfetch, Ark y herramientas de compresion.
 10. Crear una configuracion persistente de Dracut con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo y configurar GRUB UEFI con tema personalizado.
 12. Preguntar el usuario normal, pedir su contrasena y preguntar si tendra `sudo`.
@@ -351,7 +354,8 @@ Se compilan normalmente desde los ebuilds:
 - Mesa y LLVM;
 - systemd y componentes base que necesiten reconstruccion;
 - KDE Plasma y sus aplicaciones;
-- Sway, TLP y la pila PipeWire.
+- Sway, TLP y la pila PipeWire;
+- QEMU, libvirt, Virt-Manager y VirtualBox.
 
 Firefox es la excepcion explicita y se instala mediante `www-client/firefox-bin`. Las herramientas de escritorio añadidas son:
 
@@ -367,6 +371,11 @@ app-arch/unrar
 app-arch/unzip
 app-arch/zip
 app-misc/fastfetch
+app-emulation/libvirt
+app-emulation/qemu
+app-emulation/virt-manager
+app-emulation/virt-viewer
+app-emulation/virtualbox
 media-video/pipewire
 media-video/wireplumber
 net-wireless/bluez
@@ -407,6 +416,27 @@ bluetoothctl show
 
 Consulta el diagnóstico completo y la reparación para instalaciones existentes
 en [`docs/AUDIO-Y-BLUETOOTH.md`](docs/AUDIO-Y-BLUETOOTH.md).
+
+## Virtualización
+
+El perfil instala QEMU/KVM con libvirt y Virt-Manager como opción principal, y
+VirtualBox como alternativa. El Ryzen 5 4500U dispone de AMD-V y el kernel
+incluye KVM AMD, Vhost-Net, TUN/TAP, bridge y VFIO.
+
+El usuario queda en `kvm`, `libvirt` y `vboxusers`. Libvirt inicia sus sockets y
+la red NAT `default`; VirtualBox instala módulos para el kernel activo. Ambos
+backends pueden estar instalados, pero no deben ejecutar máquinas al mismo
+tiempo.
+
+Para comenzar:
+
+```bash
+virt-manager
+virtualbox
+```
+
+La configuración, convivencia entre hipervisores y diagnóstico se explican en
+[`docs/VIRTUALIZATION.md`](docs/VIRTUALIZATION.md).
 
 ## Aceleracion De Video AMD
 
@@ -561,9 +591,12 @@ No se usa LVM en este layout, por lo que `vgchange -an` no es necesario.
 - `contrib/kernel/postinst.d/95-gentoo-hp-esp.install`: automatiza esa sincronizacion al actualizar el kernel.
 - `contrib/grub/themes/gentoo-hp-zorin`: tema GRUB extraido desde `zoringrub`.
 - `contrib/screenshot.png`: captura de Gentoo-HP ejecutando KDE Plasma y Fastfetch.
+- `contrib/modules-load/90-gentoo-hp-virtualization.conf`: módulos KVM y red virtual.
+- `contrib/sysctl/90-gentoo-hp-virtualization.conf`: reenvío IPv4 para NAT de libvirt.
 - `contrib/wireplumber/10-gentoo-hp-audio-bluetooth.conf`: activa los monitores ALSA y BlueZ.
 - `docs/AUDIO-Y-BLUETOOTH.md`: funcionamiento, diagnóstico y reparación de audio/Bluetooth.
 - `docs/FUNCIONAMIENTO-Y-FIXES.md`: arquitectura y registro del commit de fixes.
+- `docs/VIRTUALIZATION.md`: uso y diagnóstico de QEMU/KVM, libvirt y VirtualBox.
 - `gentoo.conf.example`: ejemplo general con las variables nuevas de Portage.
 - `scripts/main.sh`: aplica las optimizaciones de hardware durante la instalacion.
 - `configure`: configurador generico; no guardes sobre `gentoo.conf` porque no conserva los hooks especificos de este perfil.
