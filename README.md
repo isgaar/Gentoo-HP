@@ -6,6 +6,9 @@ Este proyecto esta basado explicitamente en el repositorio original
 [oddlama/gentoo-install](https://github.com/oddlama/gentoo-install).
 Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 
+La arquitectura interna y el registro de fixes están documentados en
+[`docs/FUNCIONAMIENTO-Y-FIXES.md`](docs/FUNCIONAMIENTO-Y-FIXES.md).
+
 - CPU AMD Ryzen 5 4500U / Renoir, usando `-march=znver2`
 - GPU AMD Radeon Vega integrada, usando `VIDEO_CARDS="amdgpu radeonsi"`
 - Wi-Fi Intel Wi-Fi 6 AX200
@@ -525,6 +528,7 @@ No se usa LVM en este layout, por lo que `vgchange -an` no es necesario.
 - `contrib/kernel/postinst.d/95-gentoo-hp-esp.install`: automatiza esa sincronizacion al actualizar el kernel.
 - `contrib/grub/themes/gentoo-hp-zorin`: tema GRUB extraido desde `zoringrub`.
 - `contrib/screenshot.png`: captura de Gentoo-HP ejecutando KDE Plasma y Fastfetch.
+- `docs/FUNCIONAMIENTO-Y-FIXES.md`: arquitectura y registro del commit de fixes.
 - `gentoo.conf.example`: ejemplo general con las variables nuevas de Portage.
 - `scripts/main.sh`: aplica las optimizaciones de hardware durante la instalacion.
 - `configure`: configurador generico; no guardes sobre `gentoo.conf` porque no conserva los hooks especificos de este perfil.
