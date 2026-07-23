@@ -3,6 +3,9 @@
 Este documento describe cómo funciona el perfil Gentoo-HP, qué problemas
 resuelven los fixes incorporados y cómo auditar el commit que los introdujo.
 
+La configuración y el diagnóstico de PipeWire, WirePlumber y BlueZ se
+documentan por separado en [`AUDIO-Y-BLUETOOTH.md`](AUDIO-Y-BLUETOOTH.md).
+
 ## Commit De Los Fixes
 
 Los cambios funcionales están agrupados en este commit:

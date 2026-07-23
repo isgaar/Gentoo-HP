@@ -8,6 +8,8 @@ Sobre esa base se agrego un perfil automatizado y ajustado para este hardware:
 
 La arquitectura interna y el registro de fixes están documentados en
 [`docs/FUNCIONAMIENTO-Y-FIXES.md`](docs/FUNCIONAMIENTO-Y-FIXES.md).
+La pila multimedia y su diagnóstico están explicados en
+[`docs/AUDIO-Y-BLUETOOTH.md`](docs/AUDIO-Y-BLUETOOTH.md).
 
 - CPU AMD Ryzen 5 4500U / Renoir, usando `-march=znver2`
 - GPU AMD Radeon Vega integrada, usando `VIDEO_CARDS="amdgpu radeonsi"`
@@ -25,6 +27,8 @@ La arquitectura interna y el registro de fixes están documentados en
 - Flatpak integrado con Discover y el remoto Flathub configurado
 - Fastfetch para mostrar informacion del sistema
 - Firefox precompilado mediante `www-client/firefox-bin`
+- PipeWire + WirePlumber con ALSA, compatibilidad Pulse y RTKit
+- BlueZ habilitado para el Intel AX200, Bluedevil y audio Bluetooth
 - Sway como entorno grafico Wayland
 - foot, waybar, wofi, mako, swaylock, swayidle y wl-clipboard
 - Teclado `latam` y touchpad con tap/natural scroll en Sway
@@ -219,7 +223,7 @@ Cuando confirmes, hara en resumen:
 6. Descargar y extraer stage3 `amd64-systemd`.
 7. Configurar Portage para Ryzen 5 4500U y Radeon Vega.
 8. Compilar kernel Gentoo desde fuente.
-9. Instalar firmware, NetworkManager, iwd, SDDM, KDE Plasma, Sway, TLP, `tlp-pd`, Dolphin, Konsole, Discover, Flatpak, Fastfetch, Ark y herramientas de compresion.
+9. Instalar firmware, NetworkManager, iwd, SDDM, KDE Plasma, Sway, TLP, `tlp-pd`, PipeWire, WirePlumber, BlueZ, Dolphin, Konsole, Discover, Flatpak, Fastfetch, Ark y herramientas de compresion.
 10. Crear una configuracion persistente de Dracut con soporte temprano para `amdgpu` y `nvme`.
 11. Crear entrada EFI para arrancar Gentoo y configurar GRUB UEFI con tema personalizado.
 12. Preguntar el usuario normal, pedir su contrasena y preguntar si tendra `sudo`.
@@ -355,13 +359,19 @@ Firefox es la excepcion explicita y se instala mediante `www-client/firefox-bin`
 kde-apps/ark
 kde-apps/dolphin
 kde-apps/konsole
+kde-plasma/bluedevil
 kde-plasma/discover
+kde-plasma/plasma-pa
 app-arch/7zip
 app-arch/unrar
 app-arch/unzip
 app-arch/zip
 app-misc/fastfetch
+media-video/pipewire
+media-video/wireplumber
+net-wireless/bluez
 sys-apps/flatpak
+sys-auth/rtkit
 x11-misc/xdg-user-dirs
 ```
 
@@ -374,6 +384,29 @@ fastfetch
 flatpak remotes
 flatpak list
 ```
+
+## Audio Y Bluetooth
+
+Gentoo-HP utiliza PipeWire como servidor multimedia y WirePlumber como gestor de
+sesion. PipeWire se compila con `sound-server`, `pipewire-alsa`, `bluetooth`,
+`dbus` y `systemd`; tambien se instalan RTKit, `plasma-pa`, BlueZ y Bluedevil.
+
+El instalador activa los monitores ALSA y BlueZ de WirePlumber, habilita
+globalmente los servicios de usuario de PipeWire y habilita
+`bluetooth.service`. Esto evita que KDE muestre solamente `Dummy Output` y
+permite que el Intel AX200 busque dispositivos.
+
+Comprobacion rapida:
+
+```bash
+wpctl status
+speaker-test -c 2 -t wav -l 1
+systemctl status bluetooth
+bluetoothctl show
+```
+
+Consulta el diagnóstico completo y la reparación para instalaciones existentes
+en [`docs/AUDIO-Y-BLUETOOTH.md`](docs/AUDIO-Y-BLUETOOTH.md).
 
 ## Aceleracion De Video AMD
 
@@ -528,6 +561,8 @@ No se usa LVM en este layout, por lo que `vgchange -an` no es necesario.
 - `contrib/kernel/postinst.d/95-gentoo-hp-esp.install`: automatiza esa sincronizacion al actualizar el kernel.
 - `contrib/grub/themes/gentoo-hp-zorin`: tema GRUB extraido desde `zoringrub`.
 - `contrib/screenshot.png`: captura de Gentoo-HP ejecutando KDE Plasma y Fastfetch.
+- `contrib/wireplumber/10-gentoo-hp-audio-bluetooth.conf`: activa los monitores ALSA y BlueZ.
+- `docs/AUDIO-Y-BLUETOOTH.md`: funcionamiento, diagnóstico y reparación de audio/Bluetooth.
 - `docs/FUNCIONAMIENTO-Y-FIXES.md`: arquitectura y registro del commit de fixes.
 - `gentoo.conf.example`: ejemplo general con las variables nuevas de Portage.
 - `scripts/main.sh`: aplica las optimizaciones de hardware durante la instalacion.
