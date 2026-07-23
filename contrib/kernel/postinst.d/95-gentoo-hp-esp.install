@@ -1,0 +1,17 @@
+#!/bin/bash
+set -uo pipefail
+
+# Gentoo installkernel passes the installed kernel version and image path to
+# executable post-install hooks. Also accept the kernel-install "add" shape
+# so the hook remains useful if the implementation changes.
+case "${1-}" in
+	add)
+		exec /usr/local/sbin/gentoo-hp-update-boot "${2-}" "${4-}"
+		;;
+	remove)
+		exit 0
+		;;
+	*)
+		exec /usr/local/sbin/gentoo-hp-update-boot "${1-}" "${2-}"
+		;;
+esac

@@ -1,0 +1,128 @@
+#!/bin/bash
+set -uo pipefail
+
+ESP_MOUNTPOINT="/boot/efi"
+ESP_KERNEL="$ESP_MOUNTPOINT/vmlinuz.efi"
+ESP_INITRAMFS="$ESP_MOUNTPOINT/initramfs.img"
+
+function die() {
+	echo "gentoo-hp-update-boot: $*" >&2
+	exit 1
+}
+
+function find_latest_kernel() {
+	find /boot -maxdepth 1 -type f \
+		\( -name 'vmlinuz-*' -o -name 'kernel-*' \) \
+		-printf '%p\n' \
+		| sort -V \
+		| tail -n 1
+}
+
+function kernel_version_from_path() {
+	local name
+	name="$(basename "$1")"
+	case "$name" in
+		vmlinuz-*) echo -n "${name#vmlinuz-}" ;;
+		kernel-*)  echo -n "${name#kernel-}" ;;
+		*) return 1 ;;
+	esac
+}
+
+function find_initramfs() {
+	local kernel_version="$1"
+	local candidate
+	for candidate in \
+		"/boot/initramfs-$kernel_version.img" \
+		"/boot/initrd-$kernel_version.img" \
+		"/boot/initramfs-$kernel_version" \
+		"/boot/initrd-$kernel_version"
+	do
+		[[ -r "$candidate" ]] && { echo -n "$candidate"; return 0; }
+	done
+	return 1
+}
+
+function usage() {
+	cat <<'EOF'
+Usage: gentoo-hp-update-boot [KERNEL_VERSION [KERNEL_IMAGE]]
+
+Copies the selected kernel and its initramfs to the fixed paths used by the
+Gentoo-HP GRUB menu. Without arguments, the newest versioned kernel in /boot
+is selected. If no matching initramfs exists, one is generated with Dracut.
+EOF
+}
+
+if [[ ${1-} == "-h" || ${1-} == "--help" ]]; then
+	usage
+	exit 0
+fi
+[[ $# -le 2 ]] \
+	|| die "too many arguments; use --help for usage"
+[[ $EUID -eq 0 ]] \
+	|| die "must be run as root"
+mountpoint -q -- "$ESP_MOUNTPOINT" \
+	|| die "$ESP_MOUNTPOINT is not mounted; refusing to write boot files"
+
+kernel_version="${1-}"
+kernel_image="${2-}"
+
+if [[ -n "$kernel_image" && ! -r "$kernel_image" ]]; then
+	echo "gentoo-hp-update-boot: kernel path is no longer readable; searching /boot instead: $kernel_image" >&2
+	kernel_image=""
+fi
+
+if [[ -z "$kernel_image" && -n "$kernel_version" ]]; then
+	for candidate in "/boot/vmlinuz-$kernel_version" "/boot/kernel-$kernel_version"; do
+		if [[ -r "$candidate" ]]; then
+			kernel_image="$candidate"
+			break
+		fi
+	done
+fi
+
+if [[ -z "$kernel_image" ]]; then
+	kernel_image="$(find_latest_kernel)" \
+		|| die "could not search for kernels in /boot"
+fi
+[[ -n "$kernel_image" && -r "$kernel_image" ]] \
+	|| die "could not find a readable kernel image"
+
+if [[ -z "$kernel_version" ]]; then
+	kernel_version="$(kernel_version_from_path "$kernel_image")" \
+		|| die "could not determine the kernel version from '$kernel_image'"
+fi
+[[ -d "/lib/modules/$kernel_version" ]] \
+	|| die "kernel modules not found: /lib/modules/$kernel_version"
+
+tmp_kernel="$(mktemp "$ESP_MOUNTPOINT/.vmlinuz.efi.XXXXXX")" \
+	|| die "could not create a temporary kernel file on the ESP"
+tmp_initramfs="$(mktemp "$ESP_MOUNTPOINT/.initramfs.img.XXXXXX")" \
+	|| { rm -f -- "$tmp_kernel"; die "could not create a temporary initramfs file on the ESP"; }
+trap 'rm -f -- "$tmp_kernel" "$tmp_initramfs"' EXIT
+
+install -m0600 -- "$kernel_image" "$tmp_kernel" \
+	|| die "could not stage kernel '$kernel_image' on the ESP"
+
+if initramfs_image="$(find_initramfs "$kernel_version")"; then
+	install -m0600 -- "$initramfs_image" "$tmp_initramfs" \
+		|| die "could not stage initramfs '$initramfs_image' on the ESP"
+else
+	command -v dracut > /dev/null 2>&1 \
+		|| die "no matching initramfs was found and dracut is unavailable"
+	dracut --force --kver "$kernel_version" "$tmp_initramfs" \
+		|| die "dracut failed for kernel '$kernel_version'"
+	chmod 0600 "$tmp_initramfs" \
+		|| die "could not set initramfs permissions"
+fi
+
+mv -f -- "$tmp_initramfs" "$ESP_INITRAMFS" \
+	|| die "could not activate the new initramfs"
+mv -f -- "$tmp_kernel" "$ESP_KERNEL" \
+	|| die "could not activate the new kernel"
+sync "$ESP_MOUNTPOINT" \
+	|| die "could not synchronize the ESP"
+trap - EXIT
+
+echo "Gentoo-HP boot files updated for kernel $kernel_version:"
+echo "  $ESP_KERNEL"
+echo "  $ESP_INITRAMFS"

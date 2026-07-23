@@ -27,6 +27,9 @@ export GENTOO_INSTALL_REPO_DIR="$GENTOO_INSTALL_REPO_DIR_ORIGINAL"
 export GENTOO_INSTALL_REPO_SCRIPT_ACTIVE=true
 export GENTOO_INSTALL_REPO_SCRIPT_PID=$$
 
+export DEBUGINFOD_URLS="https://debuginfod.gentoo.org"
+export DEBUGINFOD_IMA_CERT_PATH=""
+
 umask 0077
 
 # shellcheck source=./scripts/utils.sh
@@ -121,6 +124,11 @@ if [[ "$ACTION" != "chroot" ]]; then
 		|| die "You have not properly read the config. Edit the config file and set I_HAVE_READ_AND_EDITED_THE_CONFIG_PROPERLY=true to continue."
 
 	preprocess_config
+
+	# The LUKS key is only needed while preparing the disk in the live
+	# environment. Do not expose it to emerge and the rest of the chroot.
+	[[ ${EXECUTED_IN_CHROOT-false} == "true" ]] \
+		&& unset GENTOO_INSTALL_ENCRYPTION_KEY
 fi
 
 [[ $EUID == 0 ]] \
