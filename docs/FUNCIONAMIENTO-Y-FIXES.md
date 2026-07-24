@@ -7,6 +7,8 @@ La configuración y el diagnóstico de PipeWire, WirePlumber y BlueZ se
 documentan por separado en [`AUDIO-Y-BLUETOOTH.md`](AUDIO-Y-BLUETOOTH.md).
 QEMU/KVM, libvirt y VirtualBox se documentan en
 [`VIRTUALIZATION.md`](VIRTUALIZATION.md).
+La sincronización visual de KDE con Flatpak se documenta en
+[`FLATPAK-DESKTOP-INTEGRATION.md`](FLATPAK-DESKTOP-INTEGRATION.md).
 
 ## Commit De Los Fixes
 
@@ -168,12 +170,15 @@ kde-apps/ark
 kde-apps/dolphin
 kde-apps/konsole
 kde-plasma/discover
+kde-plasma/breeze-gtk
+kde-plasma/kde-gtk-config
 app-arch/7zip
 app-arch/unrar
 app-arch/unzip
 app-arch/zip
 app-misc/fastfetch
 sys-apps/flatpak
+sys-apps/xdg-desktop-portal-gtk
 ```
 
 Ark recibe soporte ZIP y se acepta de forma específica la licencia necesaria
@@ -195,6 +200,21 @@ flatpak remote-add --system --if-not-exists \
 
 Discover puede administrar las aplicaciones Flatpak. El sistema base y los
 paquetes nativos continúan actualizándose mediante Portage.
+
+El instalador también instala `org.gtk.Gtk3theme.Breeze//3.22` desde Flathub. El
+módulo KDED de `kde-gtk-config` traduce las preferencias de Plasma a GSettings
+en Wayland y a XSettings en X11: fuentes, iconos, cursor, escalado, animaciones,
+modo claro/oscuro y colores Breeze.
+
+Las fuentes no se copian dentro de cada aplicación. Flatpak expone
+automáticamente `/usr/share/fonts`, `/usr/local/share/fonts` y
+`$XDG_DATA_HOME/fonts` como rutas de solo lectura bajo `/run/host`. Este diseño
+preserva el aislamiento del sandbox y evita overrides globales como
+`--filesystem=home`.
+
+Para los colores personalizados de Breeze sí se permite únicamente
+`xdg-config/gtk-3.0:ro`. Esa ruta contiene el CSS y los recursos que genera
+`kde-gtk-config`; no concede acceso al resto del directorio personal.
 
 ## Usuario, Permisos Y Carpetas XDG
 

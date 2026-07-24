@@ -12,6 +12,8 @@ La pila multimedia y su diagnóstico están explicados en
 [`docs/AUDIO-Y-BLUETOOTH.md`](docs/AUDIO-Y-BLUETOOTH.md).
 La virtualización se documenta en
 [`docs/VIRTUALIZATION.md`](docs/VIRTUALIZATION.md).
+La integración de fuentes y temas entre KDE y Flatpak se documenta en
+[`docs/FLATPAK-DESKTOP-INTEGRATION.md`](docs/FLATPAK-DESKTOP-INTEGRATION.md).
 
 - CPU AMD Ryzen 5 4500U / Renoir, usando `-march=znver2`
 - GPU AMD Radeon Vega integrada, usando `VIDEO_CARDS="amdgpu radeonsi"`
@@ -26,7 +28,7 @@ La virtualización se documenta en
 - SDDM como gestor de inicio de sesion
 - KDE Plasma instalado con soporte Wayland
 - Dolphin, Konsole, Discover y Ark con soporte ZIP/7-Zip/RAR
-- Flatpak integrado con Discover y el remoto Flathub configurado
+- Flatpak integrado con Discover, Flathub, fuentes del sistema y tema Breeze
 - Fastfetch para mostrar informacion del sistema
 - Firefox precompilado mediante `www-client/firefox-bin`
 - PipeWire + WirePlumber con ALSA, compatibilidad Pulse y RTKit
@@ -364,6 +366,8 @@ kde-apps/ark
 kde-apps/dolphin
 kde-apps/konsole
 kde-plasma/bluedevil
+kde-plasma/breeze-gtk
+kde-plasma/kde-gtk-config
 kde-plasma/discover
 kde-plasma/plasma-pa
 app-arch/7zip
@@ -380,11 +384,25 @@ media-video/pipewire
 media-video/wireplumber
 net-wireless/bluez
 sys-apps/flatpak
+sys-apps/xdg-desktop-portal-gtk
 sys-auth/rtkit
 x11-misc/xdg-user-dirs
 ```
 
-Discover se compila con soporte Flatpak y el instalador registra Flathub como remoto del sistema. Tambien activa la integracion Flatpak de `xdg-desktop-portal` y PipeWire. Discover administrara aplicaciones Flatpak; las actualizaciones nativas de Gentoo siguen realizandose con Portage.
+Discover se compila con soporte Flatpak y el instalador registra Flathub como
+remoto del sistema. También instala la extensión
+`org.gtk.Gtk3theme.Breeze//3.22`, los portales de KDE/GTK y el módulo
+`kde-gtk-config`. Este último sincroniza dinámicamente la tipografía, iconos,
+cursor, escalado, colores y preferencia claro/oscuro de Plasma con las
+aplicaciones GTK y Flatpak. Un override de solo lectura limitado a
+`xdg-config/gtk-3.0` comparte el esquema de color/acento generado por KDE sin
+exponer todo el directorio personal.
+
+Flatpak expone automáticamente las fuentes de `/usr/share/fonts`,
+`/usr/local/share/fonts` y `~/.local/share/fonts` dentro del sandbox. No se
+concede acceso completo al directorio personal ni se duplican las fuentes en
+cada aplicación. Discover administrará aplicaciones Flatpak; las
+actualizaciones nativas de Gentoo siguen realizándose con Portage.
 
 Para comprobarlo despues del primer arranque:
 
@@ -392,7 +410,12 @@ Para comprobarlo despues del primer arranque:
 fastfetch
 flatpak remotes
 flatpak list
+flatpak list --runtime | grep org.gtk.Gtk3theme.Breeze
+flatpak override --user --show
 ```
+
+La comprobación detallada con Brave está en
+[`docs/FLATPAK-DESKTOP-INTEGRATION.md`](docs/FLATPAK-DESKTOP-INTEGRATION.md).
 
 ## Audio Y Bluetooth
 
@@ -491,6 +514,10 @@ El perfil instala:
 Tambien crea `/etc/fonts/local.conf` con preferencias para `Noto Sans`, `Noto Serif`, `Noto Sans Mono`, variantes CJK y `Noto Color Emoji`.
 
 Esto ayuda a que KDE Plasma, Sway, terminales, navegadores y apps GTK/Qt rendericen emojis y caracteres chinos, japoneses y coreanos sin cuadros vacios.
+
+Flatpak monta esas fuentes del anfitrión en rutas `/run/host/*-fonts`. El
+módulo `kde-gtk-config` sincroniza además la fuente de interfaz y la
+monoespaciada elegidas en Plasma.
 
 ## Despues De Instalar
 
@@ -596,6 +623,7 @@ No se usa LVM en este layout, por lo que `vgchange -an` no es necesario.
 - `contrib/wireplumber/10-gentoo-hp-audio-bluetooth.conf`: activa los monitores ALSA y BlueZ.
 - `docs/AUDIO-Y-BLUETOOTH.md`: funcionamiento, diagnóstico y reparación de audio/Bluetooth.
 - `docs/FUNCIONAMIENTO-Y-FIXES.md`: arquitectura y registro del commit de fixes.
+- `docs/FLATPAK-DESKTOP-INTEGRATION.md`: fuentes, Breeze, portales y verificación con Brave Flatpak.
 - `docs/VIRTUALIZATION.md`: uso y diagnóstico de QEMU/KVM, libvirt y VirtualBox.
 - `gentoo.conf.example`: ejemplo general con las variables nuevas de Portage.
 - `scripts/main.sh`: aplica las optimizaciones de hardware durante la instalacion.
